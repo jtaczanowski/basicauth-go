@@ -13,16 +13,16 @@ func TestEnvLoading(t *testing.T) {
 	os.Setenv("TESTAPI_BOB", "bobspassword")
 
 	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 	})
 
-	h := NewFromEnv("testrealm", "TESTAPI_")(next)
+	handler := NewFromEnv("testrealm", "TESTAPI_", []string{"GET"}, true)(nextHandler)
 
 	w := &httptest.ResponseRecorder{}
 	r, _ := http.NewRequest("GET", "/", nil)
 	r.SetBasicAuth("bob", "bobspassword")
-	h.ServeHTTP(w, r)
+	handler.ServeHTTP(w, r)
 
 	assert.Equal(t, true, called)
 	assertNotDenied(t, w)

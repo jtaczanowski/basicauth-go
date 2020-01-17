@@ -9,16 +9,12 @@ golang middleware for HTTP basic auth.
 ```go
 // Chi
 
-router.Use(basicauth.New("MyRealm", map[string][]string{
-    "bob": {"password1", "password2"},
-}))
+router.Use(basicauth.New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true))
 
 
 // Manual wrapping
 
-middleware := basicauth.New("MyRealm", map[string][]string{
-    "bob": {"password1", "password2"},
-})
+middleware := basicauth.New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true)
 
 h := middlware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request)) {
     /// do stuff
@@ -31,11 +27,11 @@ log.Fatal(http.ListenAndServe(":8080", h))
 If your environment looks like this:
 ```bash
 SOME_PREFIX_BOB=password
-SOME_PREFIX_JANE=password1,password2
+SOME_PREFIX_JANE=password
 ```
 
 you can load it like this:
 ```go
-middleware := basicauth.NewFromEnv("MyRealm", "SOME_PREFIX")
+middleware := basicauth.NewFromEnv("MyRealm", "SOME_PREFIX", []string{"GET"}, true)
 ```
 

@@ -9,10 +9,10 @@ import (
 )
 
 // NewFromEnv reads a set of credentials in from environment variables in
-// the format {PREFIX}{USERNAME|tolower}=password1,password2 and returns
+// the format {PREFIX}{USERNAME|tolower}=password1 and returns
 // middleware that will validate incoming requests.
-func NewFromEnv(realm, prefix string) func(http.Handler) http.Handler {
-	credentials := map[string][]string{}
+func NewFromEnv(realm, prefix string, protectedHTTPMethods []string, enabled bool) func(http.Handler) http.Handler {
+	credentials := map[string]string{}
 
 	re := regexp.MustCompile(fmt.Sprintf("^%s(?P<username>.*)$", strings.ToUpper(prefix)))
 	for _, envVar := range os.Environ() {
@@ -20,11 +20,11 @@ func NewFromEnv(realm, prefix string) func(http.Handler) http.Handler {
 
 		if res := re.FindStringSubmatch(name); res != nil {
 			username := strings.ToLower(res[1])
-			credentials[username] = strings.Split(value, ",")
+			credentials[username] = value
 		}
 	}
 
-	return New(realm, credentials)
+	return New(realm, credentials, protectedHTTPMethods, enabled)
 }
 
 func split2(s, sep string) (string, string) {

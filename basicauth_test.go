@@ -9,68 +9,61 @@ import (
 )
 
 func TestNoAuthGetsDenied(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Should not call handler")
 	})
-
-	h := New("testrealm", map[string][]string{})(next)
+	handler := New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true)(nextHandler)
 
 	w := &httptest.ResponseRecorder{}
 	r, _ := http.NewRequest("GET", "/", nil)
-	h.ServeHTTP(w, r)
+	handler.ServeHTTP(w, r)
 
 	assertDenied(t, w)
 }
 
 func TestCorrectCredentialsGetsAllowed(t *testing.T) {
 	called := false
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 	})
 
-	h := New("testrealm", map[string][]string{
-		"bob": {"bobspassword"},
-	})(next)
+	handler := New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true)(nextHandler)
 
 	w := &httptest.ResponseRecorder{}
 	r, _ := http.NewRequest("GET", "/", nil)
-	r.SetBasicAuth("bob", "bobspassword")
-	h.ServeHTTP(w, r)
+	r.SetBasicAuth("admin", "adminpass")
+	handler.ServeHTTP(w, r)
 
 	assert.Equal(t, true, called)
 	assertNotDenied(t, w)
 }
 
 func TestInvalidPasswordIsDeined(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Should not call handler")
 	})
 
-	h := New("testrealm", map[string][]string{
-		"bob": {"bobspassword"},
-	})(next)
+	handler := New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true)(nextHandler)
 
 	w := &httptest.ResponseRecorder{}
 	r, _ := http.NewRequest("GET", "/", nil)
-	r.SetBasicAuth("bob", "notbobspassword")
-	h.ServeHTTP(w, r)
+	r.SetBasicAuth("admin", "notadminspassword")
+	handler.ServeHTTP(w, r)
 
 	assertDenied(t, w)
 }
 
 func TestInvalidUserIsDenied(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Should not call handler")
 	})
 
-	h := New("testrealm", map[string][]string{
-		"bob": {"bobspassword"},
-	})(next)
+	handler := New("testRealm", map[string]string{"admin": "adminpass"}, []string{"GET"}, true)(nextHandler)
 
 	w := &httptest.ResponseRecorder{}
 	r, _ := http.NewRequest("GET", "/", nil)
-	r.SetBasicAuth("jane", "bobspassword")
-	h.ServeHTTP(w, r)
+	r.SetBasicAuth("notadmin", "adminspassword")
+	handler.ServeHTTP(w, r)
 
 	assertDenied(t, w)
 }
@@ -80,6 +73,6 @@ func assertNotDenied(t *testing.T, w *httptest.ResponseRecorder) {
 }
 
 func assertDenied(t *testing.T, w *httptest.ResponseRecorder) {
-	assert.Equal(t, `Basic realm="testrealm"`, w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, `Basic realm="testRealm"`, w.HeaderMap.Get("WWW-Authenticate"))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
